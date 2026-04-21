@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时空档案馆 - 声音考古学</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">时空档案馆</h1>
+            <p class="subtitle">声音考古学工作台</p>
+        </header>
+
+        <main class="workbench">
+            <div class="audio-console">
+                <div class="tape-deck">
+                    <div class="tape-label">
+                        <span>编号: 73-95</span>
+                        <span class="status" id="tape-status">待播放</span>
+                    </div>
+                    
+                    <div class="visualizer">
+                        <canvas id="audio-visualizer" width="400" height="80"></canvas>
+                    </div>
+
+                    <div class="controls">
+                        <button id="play-btn" class="control-btn play-btn">
+                            <span id="play-icon">▶</span>
+                            <span id="play-text">播放</span>
+                        </button>
+                        <button id="stop-btn" class="control-btn stop-btn" disabled>
+                            <span>■</span>
+                            <span>停止</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filters-panel">
+                    <h3>音频滤镜</h3>
+                    <div class="filter-buttons">
+                        <button id="noise-reduction-btn" class="filter-btn" data-filter="noiseReduction">
+                            <div class="filter-icon">🎧</div>
+                            <div class="filter-label">降噪</div>
+                            <div class="filter-status" id="noise-status">未启用</div>
+                        </button>
+                        
+                        <button id="reverse-btn" class="filter-btn" data-filter="reverse">
+                            <div class="filter-icon">⏪</div>
+                            <div class="filter-label">倒放</div>
+                            <div class="filter-status" id="reverse-status">未启用</div>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-tip" id="filter-tip">
+                        <p>提示：使用降噪滤镜减少背景噪音，倒放滤镜可能揭示隐藏信息。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="password-section">
+                <h3>破译密码</h3>
+                <p class="hint">从录音中提取隐藏的数字密码</p>
+                
+                <div class="password-input-group">
+                    <input type="text" id="password-input" class="password-input" 
+                           placeholder="输入4位数字密码..." maxlength="4" pattern="[0-9]*">
+                    <button id="submit-btn" class="submit-btn">确认</button>
+                </div>
+                
+                <div id="password-feedback" class="feedback hidden"></div>
+            </div>
+
+            <div id="truth-section" class="truth-section hidden">
+                <h3>解密真相</h3>
+                <div class="truth-audio">
+                    <audio id="truth-audio" controls>
+                        <source src="" type="audio/mpeg">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                </div>
+                <div class="truth-text" id="truth-text">
+                    <!-- 真相文本将在这里显示 -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>© 1973-2026 时空档案馆 | 声音考古学研究部门</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

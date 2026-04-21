@@ -110,20 +110,19 @@ class AudioArchaeologist {
         for (let i = 0; i < totalSamples; i++) {
             const t = i / sampleRate;
             
-            noisePhase += 440 / sampleRate * 2 * Math.PI;
-            noisePhase2 += 880 / sampleRate * 2 * Math.PI;
+            noisePhase += 60 / sampleRate * 2 * Math.PI;
+            noisePhase2 += 120 / sampleRate * 2 * Math.PI;
             
-            const whiteNoise = (Math.random() * 2 - 1) * 0.15;
+            const whiteNoise = (Math.random() * 2 - 1) * 0.08;
             
-            const brownNoise = 0;
-            const pinkNoise = whiteNoise * 0.8;
+            const pinkNoise = whiteNoise * 0.7;
             
-            const hum = Math.sin(noisePhase) * 0.05 + Math.sin(noisePhase2) * 0.02;
+            const hum = Math.sin(noisePhase) * 0.03 + Math.sin(noisePhase2) * 0.015;
             
-            const staticNoise = Math.random() < 0.1 ? (Math.random() * 2 - 1) * 0.3 : 0;
+            const staticNoise = Math.random() < 0.05 ? (Math.random() * 2 - 1) * 0.15 : 0;
             
-            leftChannel[i] = whiteNoise + pinkNoise * 0.5 + hum + staticNoise * 0.3;
-            rightChannel[i] = leftChannel[i] * 0.98 + (Math.random() * 2 - 1) * 0.02;
+            leftChannel[i] = whiteNoise + pinkNoise * 0.5 + hum + staticNoise * 0.2;
+            rightChannel[i] = leftChannel[i] * 0.98 + (Math.random() * 2 - 1) * 0.01;
         }
     }
 
@@ -150,25 +149,24 @@ class AudioArchaeologist {
     }
 
     synthesizeDigitSpeech(leftChannel, rightChannel, startSample, endSample, sampleRate, digit) {
-        const digitFrequencies = {
-            0: { base: 120, formants: [800, 1150, 2800] },
-            1: { base: 130, formants: [450, 1800, 2800] },
-            2: { base: 125, formants: [700, 1220, 2600] },
-            3: { base: 135, formants: [550, 1650, 2700] },
-            4: { base: 120, formants: [600, 1900, 2550] },
-            5: { base: 130, formants: [500, 1700, 2600] },
-            6: { base: 125, formants: [650, 1250, 2750] },
-            7: { base: 135, formants: [550, 1850, 2500] },
-            8: { base: 120, formants: [750, 1200, 2850] },
-            9: { base: 130, formants: [580, 1750, 2650] }
+        const dtmfFrequencies = {
+            0: { low: 941, high: 1336 },
+            1: { low: 697, high: 1209 },
+            2: { low: 697, high: 1336 },
+            3: { low: 697, high: 1477 },
+            4: { low: 770, high: 1209 },
+            5: { low: 770, high: 1336 },
+            6: { low: 770, high: 1477 },
+            7: { low: 852, high: 1209 },
+            8: { low: 852, high: 1336 },
+            9: { low: 852, high: 1477 }
         };
         
-        const freqData = digitFrequencies[digit];
+        const freqData = dtmfFrequencies[digit];
         const duration = (endSample - startSample) / sampleRate;
         
-        let phase = 0;
-        let phase2 = 0;
-        let phase3 = 0;
+        let phaseLow = 0;
+        let phaseHigh = 0;
         
         for (let i = startSample; i < endSample && i < leftChannel.length; i++) {
             const t = (i - startSample) / sampleRate;
@@ -176,18 +174,22 @@ class AudioArchaeologist {
             
             const envelope = this.generateEnvelope(progress);
             
-            const baseFreq = freqData.base;
-            const voiceSample = this.generateVoicePulse(
-                t, 
-                baseFreq, 
-                freqData.formants,
-                envelope
-            );
+            phaseLow += freqData.low / sampleRate * 2 * Math.PI;
+            phaseHigh += freqData.high / sampleRate * 2 * Math.PI;
             
-            const signal = voiceSample * 0.25;
+            const dtmfSignal = (Math.sin(phaseLow) + Math.sin(phaseHigh)) * 0.25 * envelope;
+            
+            const voiceFreq = 200 + digit * 25;
+            const voicePhase = t * voiceFreq * 2 * Math.PI;
+            const vibrato = Math.sin(t * 5) * 2;
+            const formant1 = Math.sin(voicePhase * 3) * 0.15;
+            const formant2 = Math.sin(voicePhase * 6) * 0.1;
+            const voiceSignal = (formant1 + formant2) * envelope;
+            
+            const signal = dtmfSignal + voiceSignal;
             
             leftChannel[i] += signal;
-            rightChannel[i] += signal * 0.95;
+            rightChannel[i] += signal * 0.98;
         }
     }
 
@@ -358,22 +360,28 @@ class AudioArchaeologist {
         }
         
         if (this.isPlaying) {
-            const currentTime = this.audioContext.currentTime - this.startTime;
-            this.stop();
-            this.pauseTime = currentTime;
-            this.play();
+            if (filterName === 'noiseReduction') {
+                this.updateFilters();
+            } else if (filterName === 'reverse') {
+                const currentTime = this.audioContext.currentTime - this.startTime;
+                this.stop();
+                this.pauseTime = currentTime;
+                this.play();
+            }
         }
     }
 
     updateFilters() {
+        const currentTime = this.audioContext ? this.audioContext.currentTime : 0;
+        
         if (this.filters.noiseReduction) {
-            this.lowpassFilter.frequency.value = 3000;
-            this.highpassFilter.frequency.value = 300;
-            this.noiseGain.gain.value = 0.3;
+            this.lowpassFilter.frequency.setValueAtTime(3500, currentTime);
+            this.highpassFilter.frequency.setValueAtTime(200, currentTime);
+            this.gainNode.gain.setValueAtTime(1.2, currentTime);
         } else {
-            this.lowpassFilter.frequency.value = 20000;
-            this.highpassFilter.frequency.value = 20;
-            this.noiseGain.gain.value = 1.0;
+            this.lowpassFilter.frequency.setValueAtTime(20000, currentTime);
+            this.highpassFilter.frequency.setValueAtTime(20, currentTime);
+            this.gainNode.gain.setValueAtTime(0.8, currentTime);
         }
     }
 
